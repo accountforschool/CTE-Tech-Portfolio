@@ -1,0 +1,267 @@
+package textExcel;
+
+import static org.junit.Assert.assertEquals;
+
+import textExcel.TestsALL.Helper;
+import textExcel.TestsALL.TestLocation;
+
+//Emily Eng
+//5/12/2023
+//Spreadsheet, contains the spreadsheet and process the commands entered to edit spreadsheet, 
+//returns the cell at a location, and prints out the entire spreadsheet 
+
+public class Spreadsheet implements Grid{
+	
+	//make array and sets all cells as empty cells 
+	private Cell[][] array = new Cell[getRows()][getCols()];
+	public boolean log = false; 	  //record commands or no
+	public int numberofcommands = 0; //history display 3, the three
+	public String commandlist = "pqrst"; //all commands
+	
+	public Spreadsheet() {		
+		for(int i = 0; i < getRows(); i++) {
+			for(int j = 0; j < getCols(); j++) {
+				array[i][j] =  new EmptyCell();												//every cell is empty cell 
+			}
+		}  
+	}
+
+	public String processCommand(String command){											//     PROCESS COMAAND		
+		String out = "ERROR: Invalid command";
+	
+		// command to lowercase ( clear or a1 or clear a1 )									-----------------------------	
+		if(!command.contains("=")) {
+			command = command.toLowerCase();												//makes cmd lowercase
+		}
+		
+		//history history start 2 history display
+		if(command.contains("history")) {
+			String action = command.split(" ")[1];
+			String history = command.split(" ")[0];
+			
+			//history start 
+			if(history.equals("history") && action.equals("start") && command.split(" ").length>=3) {
+			commandlist = commandlist.substring(0,commandlist.length()-1);
+				if(Integer.parseInt(command.split(" ")[2])>0) {
+					log = true;
+					numberofcommands = Integer.parseInt(command.split(" ")[2]);
+					out = "";	
+					}
+				}
+			if(log == true) {
+			//history display	
+			if(history.equals("history") && action.equals("display") && log==true) {
+					out = "";
+					
+					if(commandlist.split(",").length > numberofcommands) {
+						for(int i = 0; i < numberofcommands; i++) {
+							out+= commandlist.split(",")[commandlist.split(",").length - 1 - i] + "\n";
+						}
+					}
+					else {
+						for(int i = 0; i < commandlist.split(",").length; i++) {
+							out += commandlist.split(",")[commandlist.split(",").length - 1 - i] + "\n";
+						}
+					}
+				}	
+			
+			//history clear	
+			if(history.equals("history") && action.equals("clear") && command.split(" ").length==3) {
+				if(Integer.parseInt(command.split(" ")[2])>0) {
+					int remove = Integer.parseInt(command.split(" ")[2]);
+					out = Integer.toString(remove);
+					if(remove < commandlist.split(",").length) {
+						String [] arr = commandlist.split(",");
+						String temp = ""; 
+						for(int i = remove; i < arr.length; i++) {
+							temp+=arr[i];
+							}
+						out = temp;
+						commandlist = temp; 
+						}
+					else {
+						commandlist = "";
+						}
+					}
+				}
+			//history stop 
+			if(history.equals("history") && action.equals("stop")) {
+				commandlist="";
+				out = "";
+				log = false;
+				}
+			}
+		}
+		
+		//history end
+		
+		//text cells 
+
+		//clearing the entire sheet when command equals clear								-----------------------------				
+		if(command.equals("clear")) {
+			for(int i = 0; i < getRows(); i++) {											//every cell set as empty cell
+				for(int j = 0; j < getCols(); j++) {
+					array[i][j] =  new EmptyCell();
+					}
+				}
+			out = getGridText(); 
+			if(log==true) {
+				commandlist+=command+",";
+			}
+		}	
+		
+		//if entered command is nothing command remains blank								-----------------------------	
+		else if(command.length() == 0) {								
+			out = "";																	//cmd blank, return blank
+		}
+		 
+		//cell inspection, find thing at location a1 ad return fulltext 					-----------------------------	
+		//else if(command.length()<=3) {
+		else if(Character.isLetter(command.charAt(0)) && Character.isDigit(command.charAt(command.length()-1)) && command.length()<=3) {
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(command);				//gets location of cell to return
+			out = array[Cell_Loc.getRow()][Cell_Loc.getCol()].fullCellText();			//set cmd as cell's fulltext	
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+
+		}   
+		 
+		//assignment of string values, a1 = "blah"											-----------------------------	
+		else if (command.contains("=") && command.contains("\"")) {
+			 
+			String newassignment = "";	
+			String[] splitcommand = command.split("\"");									//splits command by quotes 
+			
+			String location = splitcommand[0].split(" =")[0];								//split at "=" to get location
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(location);			
+			if(splitcommand.length>1 && splitcommand.length<3) {
+				newassignment = splitcommand[1];											//gets the text 
+			}     
+					 	
+			array[Cell_Loc.getRow()][Cell_Loc.getCol()]= new TextCell(newassignment);		//assign text to cell							
+			out = getGridText();
+		
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+		}
+		// clear specific cell, clear 														-----------------------------											
+		else if(!command.equals("clear") && command.contains("clear") && !command.contains("=")){
+			String splitcommand = command.split(" ")[1];
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(splitcommand);			//get location 
+																							
+			array[Cell_Loc.getRow()][Cell_Loc.getCol()] =  new EmptyCell();					//makes that cell empty									
+			out = getGridText();
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+
+			}   
+		//real cell  
+		  
+		//formula cell 
+		else if(command.contains("=") && command.contains("(") &&  command.contains(")") && command.split(" = ")[1].startsWith("(")) {			//see if char after "=" is "("
+			//command = command.toLowerCase();
+			String splitcommand = command.split(" = ")[1];									//split at "=" for cmd and loc 
+			String location = command.split(" = ")[0];											
+
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(location);				//get location 
+				int row = Cell_Loc.getRow();
+				int col = Cell_Loc.getCol();
+				splitcommand = splitcommand.substring(2,splitcommand.length()-2);
+			array[row][col] = new FormulaCell(splitcommand, this); 							//cmd as formula cell
+			
+			out = getGridText();
+			
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+			   
+ 		} 
+		//percent cell 																		-----------------------------	
+		else if(command.indexOf("%")==command.length()-1) {									//checks if cmd conatins "%"
+			  
+			String splitcommand = command.split(" = ")[0];
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(splitcommand);			//get loc
+			 
+			
+			String decimal = Double.toString(Double.parseDouble(command.split("= ")[1]		//cmd to decimal 
+					.substring(0,command.split("= ")[1].length()-1))/100);
+			 
+			array[Cell_Loc.getRow()][Cell_Loc.getCol()] = new PercentCell(decimal);			//makes percentcell with decimal
+			out = getGridText(); 
+			
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+		}   
+		//value cell  																		-----------------------------	
+		else if(command.contains("=") ) {							//checks if cmd conatins "/"
+			
+			SpreadsheetLocation Cell_Loc = new SpreadsheetLocation(command.split(" = ")[0]);		
+																							//get loc and assign valuecell cmd
+			array[Cell_Loc.getRow()][Cell_Loc.getCol()]=new ValueCell(command.split(" = ")[1]);
+																							
+
+			out = getGridText();
+		
+			if(log==true) {
+				commandlist+=command+",";
+			}
+
+		} 
+		
+		return out;   
+	}  
+
+	public int getRows(){															//20 rows
+		return 20;
+	}
+
+	public int getCols(){															//12 cols 
+		return 12;
+	} 
+
+	
+	public Cell getCell(Location loc){												// takes a location and return the cell at that location in spreadsheet
+		int a = loc.getCol();
+		int b = loc.getRow();
+		Cell cell = array[b][a];
+		return cell;
+	}
+
+	public String getGridText(){													//prints the spreadsheet out 
+		
+		//p is spaces after row number
+		String p = "   ";															//3 spaces after row header numbers  
+		
+		char letter = 'A';
+		//spaces seperating the letters of the column 
+		String spaces= "         ";													//9 spaces after columm header letters
+		for(int col = 0; col < 12; col++ ) {
+			p+="|"+letter+spaces;													//column header letter + spaces + that line 
+			letter++;
+		}																
+		p+="|"+"\n";
+		
+		for(int row = 1; row <= 20; row++) {										//if row number 2+ digits, it only has 2 spaces after it,
+			p+= row;																//adds each abbreviatedcell text then the line then moves to next row 
+			if(row<10) {
+				p+=" ";
+			}
+			p+=" |";
+			for(int cell = 0; cell < 12; cell ++) {
+			p+= array[row-1][cell].abbreviatedCellText()+"|";
+		} 
+		p+="\n";	
+		}
+		
+	
+		return p;
+	}
+}
