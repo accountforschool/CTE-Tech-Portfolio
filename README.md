@@ -4,5 +4,5 @@ textexcel is a spreadsheet that displays values that you input with a cell locat
 
 country data as written for class to sort and format data from a csv file, and displaying their stats, it shows the country, the gdp for each of the years and thre min and max and the trend of the data, demonstrates use of arraylists 
 
-sandwich was written for class to seperate a string sandwich by the two pieces on breads on eaither ends, demonstrates use of split command 
+sandwich was written for class to seperate a string sandwich by the two pieces on breads on either ends, demonstrates use of split command 
 
