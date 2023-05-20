@@ -6,3 +6,4 @@ country data as written for class to sort and format data from a csv file, and d
 
 sandwich was written for class to seperate a string sandwich by the two pieces on breads on either ends, demonstrates use of split command 
 
+hobbit was written for class, it creates a party of travelers and sets the distances traveled by each traveler by type, it demostrates the use of class inheritance and different objects
